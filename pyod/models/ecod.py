@@ -143,9 +143,9 @@ class ECOD(BaseDetector):
         self.O = np.maximum(self.U_skew, self.O)
 
         if scores_per_feature:
-            decision_scores_ = self.O.to_numpy()
+            decision_scores_ = self.O
         else:
-            decision_scores_ = self.O.sum(axis=1).to_numpy().ravel()
+            decision_scores_ = self.O.sum(axis=1).ravel()
 
         if hasattr(self, 'X_train'):
             decision_scores_ = decision_scores_[-original_size:]
@@ -209,9 +209,9 @@ class ECOD(BaseDetector):
         self.O = np.maximum(self.U_skew, self.O)
 
         if scores_per_feature:
-            decision_scores_ = self.O.to_numpy()
+            decision_scores_ = self.O
         else:
-            decision_scores_ = self.O.sum(axis=1).to_numpy().ravel()
+            decision_scores_ = self.O.sum(axis=1).ravel()
 
         if hasattr(self, 'X_train'):
             decision_scores_ = decision_scores_[-original_size:]
