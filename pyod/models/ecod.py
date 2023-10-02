@@ -113,7 +113,7 @@ class ECOD(BaseDetector):
         self._process_decision_scores()
         return self
 
-    def decision_function(self, X):
+    def decision_function(self, X, scores_per_feature=False):
         """Predict raw anomaly score of X using the fitted detector.
          For consistency, outliers are assigned with larger anomaly scores.
         Parameters
@@ -128,7 +128,7 @@ class ECOD(BaseDetector):
         """
         # use multi-thread execution
         if self.n_jobs != 1:
-            return self._decision_function_parallel(X)
+            return self._decision_function_parallel(X, scores_per_feature=scores_per_feature)
         if hasattr(self, 'X_train'):
             original_size = X.shape[0]
             X = np.concatenate((self.X_train, X), axis=0)
@@ -142,13 +142,17 @@ class ECOD(BaseDetector):
         self.O = np.maximum(self.U_l, self.U_r)
         self.O = np.maximum(self.U_skew, self.O)
 
-        if hasattr(self, 'X_train'):
-            decision_scores_ = self.O.sum(axis=1)[-original_size:]
+        if scores_per_feature:
+            decision_scores_ = self.O.to_numpy()
         else:
-            decision_scores_ = self.O.sum(axis=1)
-        return decision_scores_.ravel()
+            decision_scores_ = self.O.sum(axis=1).to_numpy().ravel()
 
-    def _decision_function_parallel(self, X):
+        if hasattr(self, 'X_train'):
+            decision_scores_ = decision_scores_[-original_size:]
+        
+        return decision_scores_
+
+    def _decision_function_parallel(self, X, scores_per_feature=False):
         """Predict raw anomaly score of X using the fitted detector.
          For consistency, outliers are assigned with larger anomaly scores.
         Parameters
@@ -204,15 +208,19 @@ class ECOD(BaseDetector):
         self.O = np.maximum(self.U_l, self.U_r)
         self.O = np.maximum(self.U_skew, self.O)
 
-        if hasattr(self, 'X_train'):
-            decision_scores_ = self.O.sum(axis=1)[-original_size:]
+        if scores_per_feature:
+            decision_scores_ = self.O.to_numpy()
         else:
-            decision_scores_ = self.O.sum(axis=1)
-        return decision_scores_.ravel()
+            decision_scores_ = self.O.sum(axis=1).to_numpy().ravel()
+
+        if hasattr(self, 'X_train'):
+            decision_scores_ = decision_scores_[-original_size:]
+
+        return decision_scores_
 
     def explain_outlier(self, ind, columns=None, cutoffs=None,
                         feature_names=None, file_name=None,
-                        file_type=None):  # pragma: no cover
+                        file_type=None, x_rotation=0):  # pragma: no cover
         """Plot dimensional outlier graph for a given data point within
         the dataset.
 
@@ -277,6 +285,8 @@ class ECOD(BaseDetector):
 
         plt.yticks(range(0, int(self.O[:, columns].max().max()) + 1))
         plt.xlim(0.95, ticks[-1] + 0.05)
+        plt.xticks(rotation=x_rotation)
+            
         label = 'Outlier' if self.labels_[ind] == 1 else 'Inlier'
         plt.title(
             'Outlier score breakdown for sample #{index} ({label})'.format(
