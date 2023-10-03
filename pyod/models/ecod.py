@@ -220,7 +220,7 @@ class ECOD(BaseDetector):
 
     def explain_outlier(self, ind, columns=None, cutoffs=None,
                         feature_names=None, file_name=None,
-                        file_type=None, x_rotation=0):  # pragma: no cover
+                        file_type=None, x_rotation=0, test_sample=None):  # pragma: no cover
         """Plot dimensional outlier graph for a given data point within
         the dataset.
 
@@ -247,6 +247,9 @@ class ECOD(BaseDetector):
         file_type : string
             The file type to save the figure
 
+        test_sample: tuple
+            The features and labels of the test sample to be visualized
+
         Returns
         -------
         Plot : matplotlib plot
@@ -262,8 +265,12 @@ class ECOD(BaseDetector):
                    0.99] if cutoffs is None else cutoffs
 
         # plot outlier scores
-        plt.scatter(column_range, self.O[ind, columns], marker='^', c='black',
-                    label='Outlier Score')
+        if test_sample != None:
+            plt.scatter(column_range, test_sample[0], marker='^', c='black',
+                        label='Outlier Score')
+        else:
+            plt.scatter(column_range, self.O[ind, columns], marker='^', c='black',
+                        label='Outlier Score')
 
         for i in cutoffs:
             plt.plot(column_range,
@@ -287,10 +294,16 @@ class ECOD(BaseDetector):
         plt.xlim(0.95, ticks[-1] + 0.05)
         plt.xticks(rotation=x_rotation)
             
-        label = 'Outlier' if self.labels_[ind] == 1 else 'Inlier'
-        plt.title(
-            'Outlier score breakdown for sample #{index} ({label})'.format(
-                index=ind + 1, label=label))
+        if test_sample != None:
+            label = 'Outlier' if test_sample[1] == 1 else 'Inlier'
+            plt.title(
+                'Outlier score breakdown for test sample ({label})'.format(
+                    label=label))
+        else:
+            label = 'Outlier' if self.labels_[ind] == 1 else 'Inlier'
+            plt.title(
+                'Outlier score breakdown for sample #{index} ({label})'.format(
+                    index=ind + 1, label=label))
         plt.legend()
         plt.tight_layout()
 
