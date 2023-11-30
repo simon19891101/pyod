@@ -138,7 +138,7 @@ class ECOD(BaseDetector):
 
         # calculate the skewed tail probability
         skewness_weight = skew(X, axis=0) < 0
-        _skew = U_l * skewness_weight + U_r * (~skewness_weight)
+        U_skew = U_l * skewness_weight + U_r * (~skewness_weight)
 
         # compute left, right and skewness log tail probabilitity
         O_left = U_l.sum(axis=1)
