@@ -132,38 +132,46 @@ class ECOD(BaseDetector):
         if hasattr(self, 'X_train'):
             original_size = X.shape[0]
             X = np.concatenate((self.X_train, X), axis=0)
-        self.U_l = -1 * np.log(column_ecdf(X))
-        self.U_r = -1 * np.log(column_ecdf(-X))
+        
+        U_l = -1 * np.log(column_ecdf(X))
+        U_r = -1 * np.log(column_ecdf(-X))
 
         # calculate the skewed tail probability
         skewness_weight = skew(X, axis=0) < 0
-        self.U_skew = self.U_l * skewness_weight + self.U_r * (~skewness_weight)
+        _skew = U_l * skewness_weight + U_r * (~skewness_weight)
 
         # compute left, right and skewness log tail probabilitity
-        O_left = self.U_l.sum(axis=1)
-        O_right = self.U_r.sum(axis=1)
-        O_skew = self.U_skew.sum(axis=1)
+        O_left = U_l.sum(axis=1)
+        O_right = U_r.sum(axis=1)
+        O_skew = U_skew.sum(axis=1)
 
-        n_cols = self.U_l.shape[1]
+        n_cols = U_l.shape[1]
         lrs_decision = np.argmax(np.concatenate((O_left.reshape(-1, 1), O_right.reshape(-1, 1), O_skew.reshape(-1, 1)), axis=1), axis=1)
         for i in range(n_cols):
             if i == 0:
-                O_cols = np.hstack([self.U_l, self.U_r, self.U_skew])[np.arange(len(lrs_decision)), lrs_decision*n_cols+i].reshape(-1,1)
+                O_cols = np.hstack([U_l, U_r, U_skew])[np.arange(len(lrs_decision)), lrs_decision*n_cols+i].reshape(-1,1)
             else:
-                stacked_col = np.hstack([self.U_l, self.U_r, self.U_skew])[np.arange(len(lrs_decision)), lrs_decision*n_cols+i].reshape(-1,1)
+                stacked_col = np.hstack([U_l, U_r, U_skew])[np.arange(len(lrs_decision)), lrs_decision*n_cols+i].reshape(-1,1)
                 O_cols = np.hstack([O_cols, stacked_col])
 
         # get the maximum for each of the three probabilities as outlier probability for each sample
-        self.O = O_cols
-        # self.O = np.max(np.concatenate((O_left.reshape(-1, 1), O_right.reshape(-1, 1), O_skew.reshape(-1, 1)), axis=1), axis=1)
+        O = O_cols
+        # O = np.max(np.concatenate((O_left.reshape(-1, 1), O_right.reshape(-1, 1), O_skew.reshape(-1, 1)), axis=1), axis=1)
 
         if scores_per_feature:
-            decision_scores_ = self.O
+            decision_scores_ = O
         else:
-            decision_scores_ = self.O.sum(axis=1)
+            decision_scores_ = O.sum(axis=1)
 
         if hasattr(self, 'X_train'):
             decision_scores_ = decision_scores_[-original_size:]
+        else:
+            # only keep the params when we train the model
+            # keep it intact during prediction
+            self.U_l = U_l 
+            self.U_r = U_r
+            self.U_skew = U_skew
+            self.O = O
         
         return decision_scores_
 
