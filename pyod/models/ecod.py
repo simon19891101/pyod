@@ -154,13 +154,13 @@ class ECOD(BaseDetector):
                 O_cols = np.hstack([O_cols, stacked_col])
 
         # get the maximum for each of the three probabilities as outlier probability for each sample
-        self.O = np.max(np.concatenate((O_left.reshape(-1, 1), O_right.reshape(-1, 1), O_skew.reshape(-1, 1)), axis=1),
-                        axis=1)
+        self.O = O_cols
+        # self.O = np.max(np.concatenate((O_left.reshape(-1, 1), O_right.reshape(-1, 1), O_skew.reshape(-1, 1)), axis=1), axis=1)
 
         if scores_per_feature:
-            decision_scores_ = O_cols
-        else:
             decision_scores_ = self.O
+        else:
+            decision_scores_ = self.O.sum(axis=1)
 
         if hasattr(self, 'X_train'):
             decision_scores_ = decision_scores_[-original_size:]
