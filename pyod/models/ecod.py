@@ -135,12 +135,18 @@ class ECOD(BaseDetector):
         self.U_l = -1 * np.log(column_ecdf(X))
         self.U_r = -1 * np.log(column_ecdf(-X))
 
-        skewness = np.sign(skew(X, axis=0))
-        self.U_skew = self.U_l * -1 * np.sign(
-            skewness - 1) + self.U_r * np.sign(skewness + 1)
+        # calculate the skewed tail probability
+        skewness_weight = skew(X, axis=0) < 0
+        self.U_skew = self.U_l * skewness_weight + self.U_r * (~skewness_weight)
 
-        self.O = np.maximum(self.U_l, self.U_r)
-        self.O = np.maximum(self.U_skew, self.O)
+        # compute left, right and skewness log tail probabilitity
+        O_left = self.U_l.sum(axis=1)
+        O_right = self.U_r.sum(axis=1)
+        O_skew = self.U_skew.sum(axis=1)
+
+        # get the maximum for each of the three probabilities as outlier probability for each sample
+        self.O = np.max(np.concatenate((O_left.reshape(-1, 1), O_right.reshape(-1, 1), O_skew.reshape(-1, 1)), axis=1),
+                        axis=1)
 
         if scores_per_feature:
             decision_scores_ = self.O
